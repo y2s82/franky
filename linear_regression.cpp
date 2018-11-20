@@ -19,6 +19,7 @@ int main(int argc, char* argv[]) {
         epoches = std::strtoul(argv[3], NULL,10); 
         std::cout << "N = " << N << ", learn_rate = " << learn_rate << ", epoches" << epoches << std::endl;
     }
+    // creating random dataset
     std::vector<double> m_real(N), b_real(N), x(N), y(N);
     std::default_random_engine generator;
     std::normal_distribution<double> m_dist(0.5,0.2);
@@ -30,6 +31,7 @@ int main(int argc, char* argv[]) {
         x[i] = x_dist(generator);
         y[i] = m_real[i] * x[i] + b_real[i];
     }
+    // estimated b, m
     double b = 0;
     double m = 0;
     // gradient descent 

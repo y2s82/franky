@@ -20,9 +20,9 @@ class Body{
     T get_accumul() const { return m_acc; }
 
     template<typename Tag>
-        void operator()(const tbb::blocked_range<unsigned long>& r, Tag){
+        void operator()(const tbb::blocked_range<size_t>& r, Tag){
             T temp = m_acc;
-            for (int i = r.begin(); i != r.end(); i++){
+            for (size_t i = r.begin(); i != r.end(); i++){
                 temp = m_c(temp, m_out[i],m_coor[i]);
                 if (Tag::is_final_scan()){
                     m_out[i] = temp;
@@ -32,38 +32,24 @@ class Body{
         }
     Body(Body& b, tbb::split) : m_acc(b.m_i), m_coor(b.m_coor), m_out(b.m_out), m_i(b.m_i), m_c(b.m_c){}
     void reverse_join(Body& a){
-        m_acc = (m_acc + a.m_acc)/2;
+        m_acc.s_m = (m_acc.s_m + a.m_acc.s_m)/2;
+        m_acc.s_b = (m_acc.s_b + a.m_acc.s_b)/2;
     }
     void assign(Body& b) { m_acc = b.m_acc ; }
 };
 struct Para{
     double s_m;
     double s_b;
-    Para(double m, double b):s_m(m),s_b(b){};
-    Para():Para(0,0){};
-    Para operator+(const Para& a)const{
-        return Para( s_m+a.s_m , s_b+a.s_b );
-    };
-    Para operator/(const double a)const{
-        return Para( s_m/a, s_b/a );
-    };
-    Para operator=(const Para& a){
-        s_m = a.s_m;
-        s_b = a.s_b;
-        return *this;
-    };
 };
 struct Coor{
     double s_x;
     double s_y;
-    Coor(double x, double y):s_x(x),s_y(y){};
-    Coor():Coor(0,0){};
 };
 
 template<typename T,typename R, typename C>
-T scan( T* out, R* co, int n, T identity, C combine){
+T scan( T* out, R* co, size_t n, T identity, C combine){
     Body<T,R,C> body(out, co, identity, combine);
-    tbb::parallel_scan( tbb::blocked_range<unsigned long>(0,n), body );
+    tbb::parallel_scan( tbb::blocked_range<size_t>(0,n,5000), body );
     return body.get_accumul();
 }
 

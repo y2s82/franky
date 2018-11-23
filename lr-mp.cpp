@@ -23,29 +23,29 @@ class Body{
         void operator()(const tbb::blocked_range<unsigned long>& r, Tag){
             T temp = m_acc;
             for (int i = r.begin(); i != r.end(); i++){
-                temp = m_c(temp, *(m_out+i),*(m_coor+i));
+                temp = m_c(temp, m_out[i],m_coor[i]);
                 if (Tag::is_final_scan()){
-                    *(m_out+i) = temp;
+                    m_out[i] = temp;
                 }
             }
             m_acc = temp;
         }
     Body(Body& b, tbb::split) : m_acc(b.m_i), m_coor(b.m_coor), m_out(b.m_out), m_i(b.m_i), m_c(b.m_c){}
-    void reverse_join(Body& a){ 
-        m_acc = (m_acc + a.m_acc)/2; 
+    void reverse_join(Body& a){
+        m_acc = (m_acc + a.m_acc)/2;
     }
     void assign(Body& b) { m_acc = b.m_acc ; }
 };
 struct Para{
     double s_m;
     double s_b;
-    Para(double m, double b):s_m(m),s_b(b){}
+    Para(double m, double b):s_m(m),s_b(b){};
     Para():Para(0,0){};
     Para operator+(const Para& a)const{
-        return Para(s_m+a.s_m,s_b+a.s_b);
+        return Para( s_m+a.s_m , s_b+a.s_b );
     };
     Para operator/(const double a)const{
-        return Para(s_m/2,s_b/2);
+        return Para( s_m/a, s_b/a );
     };
     Para operator=(const Para& a){
         s_m = a.s_m;
@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
         double p = temp.s_b + temp.s_m * c.s_x;
         double err = p - c.s_y;
         a.s_b = temp.s_b - learn_rate * err;
-        a.s_m = temp.s_m - learn_rate * err;
+        a.s_m = temp.s_m - learn_rate * err * c.s_x;
         return a;
     };
 
@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
     for(size_t i = 0 ; i < epoches ; i++){
         final = scan(a,c,N,final,calc);
     }
-    std::cout << "b = " << final.s_b  << ", m = " << final.s_m << std::endl;
+    std::cout << "b = " << a[N-1].s_b  << ", m = " << a[N-1].s_m << std::endl;
     delete [] a;
     delete [] c;
     return 0;

@@ -9,10 +9,10 @@
 template<typename T,typename R, typename C>
 class Body{
     T m_acc;
-    R* m_coor;
+    const R* m_coor;
     T* m_out;
-    const T m_i;
-    const C m_c;
+    T m_i;
+    C m_c;
 
     public:
 
@@ -20,22 +20,20 @@ class Body{
     T get_accumul() const { return m_acc; }
 
     template<typename Tag>
-    void operator()(const tbb::blocked_range<unsigned long>& r, Tag){
-        T temp = m_acc;
-        for (int i = r.begin(); i != r.end(); i++){
-            std::cout << "In () at r of : " << i << std::endl;
-            std::cout << m_out << std::endl;
-            std::cout << "variables: " << m_out[i].s_b;
-            std::cout <<" " << m_out[i].s_m;
-            std::cout << " " << m_coor[i].s_x <<std::endl;
-            temp = m_c(temp, m_out[i],m_coor[i]);
-            if (Tag::is_final_scan())
-                m_out[i] = temp;
+        void operator()(const tbb::blocked_range<unsigned long>& r, Tag){
+            T temp = m_acc;
+            for (int i = r.begin(); i != r.end(); i++){
+                temp = m_c(temp, *(m_out+i),*(m_coor+i));
+                if (Tag::is_final_scan()){
+                    *(m_out+i) = temp;
+                }
+            }
+            m_acc = temp;
         }
-        m_acc = temp;
+    Body(Body& b, tbb::split) : m_acc(b.m_i), m_coor(b.m_coor), m_out(b.m_out), m_i(b.m_i), m_c(b.m_c){}
+    void reverse_join(Body& a){ 
+        m_acc = (m_acc + a.m_acc)/2; 
     }
-    Body(Body& b, tbb::split) : m_acc(b.m_i), m_out(b.m_out), m_i(b.m_i), m_c(b.m_c){}
-    void reverse_join(Body& a){ m_acc = (m_acc + a.m_acc)/2; }
     void assign(Body& b) { m_acc = b.m_acc ; }
 };
 struct Para{
@@ -58,6 +56,8 @@ struct Para{
 struct Coor{
     double s_x;
     double s_y;
+    Coor(double x, double y):s_x(x),s_y(y){};
+    Coor():Coor(0,0){};
 };
 
 template<typename T,typename R, typename C>
@@ -84,14 +84,14 @@ int main(int argc, char* argv[]) {
     }
 
     // creating random dataset
-    Coor* c = new Coor[N]; /* coordinates */
+    Coor* c = nullptr;
+    c = new Coor[N]; /* coordinates */
+
     double m_real[N], b_real[N];
     std::default_random_engine generator;
     std::normal_distribution<double> m_dist(0.5,0.2);
     std::normal_distribution<double> b_dist(1.0,0.2);
     std::normal_distribution<double> x_dist(0.0,1);
-    std::cout<<"generating data"<<std::endl;
-#pragma omp parallel for
     for(size_t i = 0; i < N; i++) {
         m_real[i] = m_dist(generator);
         b_real[i] = b_dist(generator);
@@ -99,26 +99,19 @@ int main(int argc, char* argv[]) {
         c[i].s_y = m_real[i] * c[i].s_x + b_real[i];
     }
 
-    std::cout <<"setting up analysis"<<std::endl;
-    Para* a = new Para[N]; /* parameters */
+    Para* a = nullptr;
+    a = new Para[N]; /* parameters */
 
-    auto calc = [&](Para temp, Para a, Coor c ) -> Para {
-        std::cout << "variables: " << temp.s_b <<" " << temp.s_m<< " " << c.s_x <<std::endl;
+    auto calc = [&](Para& temp, Para& a, const Coor& c )  {
         double p = temp.s_b + temp.s_m * c.s_x;
-        std::cout << "p of the calc"<<std::endl;
         double err = p - c.s_y;
-        std::cout << "err of the calc"<<std::endl;
         a.s_b = temp.s_b - learn_rate * err;
-        std::cout << "a.s_b of the calc"<<std::endl;
         a.s_m = temp.s_m - learn_rate * err;
-        std::cout << "a.s_m of the calc"<<std::endl;
         return a;
     };
 
     Para final;
-    std::cout<<"starting analysis"<<std::endl;
     for(size_t i = 0 ; i < epoches ; i++){
-        std::cout << "at : " << i << std::endl;
         final = scan(a,c,N,final,calc);
     }
     std::cout << "b = " << final.s_b  << ", m = " << final.s_m << std::endl;

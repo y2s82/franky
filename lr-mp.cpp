@@ -6,7 +6,7 @@
 #include <tbb/tbb.h>
 
 #include "Coor.h"
-#include "Random.h"
+#include "Prepare.h"
 
 template<typename T,typename R, typename C>
 class Body{

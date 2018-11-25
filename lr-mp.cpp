@@ -1,10 +1,12 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
-#include <random>
 #include <vector>
 #include <algorithm>
 #include <tbb/tbb.h>
+
+#include "Coor.h"
+#include "Random.h"
 
 template<typename T,typename R, typename C>
 class Body{
@@ -47,14 +49,6 @@ class Body{
     }
     void assign(Body& b) { m_acc = b.m_acc ; }
 };
-struct Para{
-    double s_m;
-    double s_b;
-};
-struct Coor{
-    double s_x;
-    double s_y;
-};
 
 template<typename T,typename R, typename C>
 T scan( T* out, R* co, size_t n, T identity, C combine){
@@ -80,23 +74,12 @@ int main(int argc, char* argv[]) {
     }
 
     // creating random dataset
-    Coor* c = nullptr;
-    c = new Coor[N]; /* coordinates */
-
+    Coor* c = new Coor[N]; /* coordinates */
     double m_real[N], b_real[N];
-    std::default_random_engine generator;
-    std::normal_distribution<double> m_dist(0.5,0.2);
-    std::normal_distribution<double> b_dist(1.0,0.2);
-    std::normal_distribution<double> x_dist(0.0,1);
-    for(size_t i = 0; i < N; i++) {
-        m_real[i] = m_dist(generator);
-        b_real[i] = b_dist(generator);
-        c[i].s_x = x_dist(generator);
-        c[i].s_y = m_real[i] * c[i].s_x + b_real[i];
-    }
 
-    Para* a = nullptr;
-    a = new Para[N]; /* parameters */
+    prepare(m_real,b_real,c,N);
+
+    Para* a = new Para[N]; /* parameters */
 
     auto calc = [&](Para& temp, Para& a, const Coor& c )  {
         double p = temp.s_b + temp.s_m * c.s_x;

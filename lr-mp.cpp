@@ -19,8 +19,14 @@ class Body{
     Body(T* out,R* co, T i, C c): m_acc(i),m_coor(co), m_out(out), m_i(i), m_c(c) {}
     T get_accumul() const { return m_acc; }
 
+        void operator()(tbb::blocked_range<size_t>& r){
+            T temp = m_acc;
+            for (size_t i = r.begin(); i != r.end(); i++)
+                temp = m_c(temp, m_out[i],m_coor[i]);
+            m_acc = temp;
+        }
     template<typename Tag>
-        void operator()(const tbb::blocked_range<size_t>& r, Tag){
+        void operator()(tbb::blocked_range<size_t>& r, Tag){
             T temp = m_acc;
             for (size_t i = r.begin(); i != r.end(); i++){
                 temp = m_c(temp, m_out[i],m_coor[i]);
@@ -32,6 +38,10 @@ class Body{
         }
     Body(Body& b, tbb::split) : m_acc(b.m_i), m_coor(b.m_coor), m_out(b.m_out), m_i(b.m_i), m_c(b.m_c){}
     void reverse_join(Body& a){
+        m_acc.s_m = (m_acc.s_m + a.m_acc.s_m)/2;
+        m_acc.s_b = (m_acc.s_b + a.m_acc.s_b)/2;
+    }
+    void join(Body& a){
         m_acc.s_m = (m_acc.s_m + a.m_acc.s_m)/2;
         m_acc.s_b = (m_acc.s_b + a.m_acc.s_b)/2;
     }
@@ -49,7 +59,7 @@ struct Coor{
 template<typename T,typename R, typename C>
 T scan( T* out, R* co, size_t n, T identity, C combine){
     Body<T,R,C> body(out, co, identity, combine);
-    tbb::parallel_scan( tbb::blocked_range<size_t>(0,n,5000), body );
+    tbb::parallel_reduce ( tbb::blocked_range<size_t>(0,n,5000), body );
     return body.get_accumul();
 }
 

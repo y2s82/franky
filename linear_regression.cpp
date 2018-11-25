@@ -1,10 +1,8 @@
 #include <cmath>
-#include <cstdlib>
 #include <iostream>
 #include <random>
-#include <vector>
-#include <algorithm>
 #include <chrono>
+
 int main(int argc, char* argv[]) {
     size_t N;
     double learn_rate;

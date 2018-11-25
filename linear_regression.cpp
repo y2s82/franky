@@ -41,8 +41,8 @@ int main(int argc, char* argv[]) {
         double err = p - y[idx];
         b = b - learn_rate * err;
         m = m - learn_rate * err * x[idx];
-        std::cout << "b = " << b  << ", m = " << m << ", err = " << err << "\n";
     }
+    std::cout << "b = " << b  << ", m = " << m;
     std::cout << std::endl;
 
     return 0;

@@ -2,12 +2,13 @@
 __pycache__/
 *.py[cod]
 *$py.class
-.out
-.exe
-.obj
+
 
 # C extensions
 *.so
+*.out
+*.exe
+*.obj
 
 # Distribution / packaging
 .Python

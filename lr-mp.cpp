@@ -1,8 +1,9 @@
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <vector>
-#include <algorithm>
+#include <random>
 #include <tbb/tbb.h>
 
 #include "Coor.h"
@@ -77,7 +78,17 @@ int main(int argc, char* argv[]) {
     Coor* c = new Coor[N]; /* coordinates */
     double m_real[N], b_real[N];
 
-    prepare(m_real,b_real,c,N);
+    std::default_random_engine generator;
+    std::normal_distribution<double> m_dist(0.5,0.2);
+    std::normal_distribution<double> b_dist(1.0,0.2);
+    std::normal_distribution<double> x_dist(0.0,1);
+#pragma omp parallel for schedule(guided, 1)
+    for(size_t i = 0; i < N; i++) {
+        m_real[i] = m_dist(generator);
+        b_real[i] = b_dist(generator);
+        c[i].s_x = x_dist(generator);
+        c[i].s_y = m_real[i] * c[i].s_x + b_real[i];
+    }
 
     Para* a = new Para[N]; /* parameters */
 

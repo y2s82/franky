@@ -6,9 +6,14 @@
 #include <random>
 #include <tbb/tbb.h>
 
-#include "Coor.h"
-#include "Prepare.h"
-
+struct Para{
+    double s_m;
+    double s_b;
+};
+struct Coor{
+    double s_x;
+    double s_y;
+};
 template<typename T,typename R, typename C>
 class Body{
     T m_acc;

@@ -22,16 +22,16 @@ class Body{
     Body(T* out,R* co, T i, C c): m_acc(i),m_coor(co), m_out(out), m_i(i), m_c(c) {}
     T get_accumul() const { return m_acc; }
 
-        void operator()(tbb::blocked_range<size_t>& r){
+        void operator()(tbb::blocked_range<std::size_t>& r){
             T temp = m_acc;
-            for (size_t i = r.begin(); i != r.end(); i++)
+            for (std::size_t i = r.begin(); i != r.end(); i++)
                 temp = m_c(temp, m_out[i],m_coor[i]);
             m_acc = temp;
         }
     template<typename Tag>
-        void operator()(tbb::blocked_range<size_t>& r, Tag){
+        void operator()(tbb::blocked_range<std::size_t>& r, Tag){
             T temp = m_acc;
-            for (size_t i = r.begin(); i != r.end(); i++){
+            for (std::size_t i = r.begin(); i != r.end(); i++){
                 temp = m_c(temp, m_out[i],m_coor[i]);
                 if (Tag::is_final_scan()){
                     m_out[i] = temp;
@@ -52,17 +52,17 @@ class Body{
 };
 
 template<typename T,typename R, typename C>
-T scan( T* out, R* co, size_t n, T identity, C combine){
+T scan( T* out, R* co, std::size_t n, T identity, C combine){
     Body<T,R,C> body(out, co, identity, combine);
-    tbb::parallel_reduce ( tbb::blocked_range<size_t>(0,n,5000), body );
+    tbb::parallel_reduce ( tbb::blocked_range<std::size_t>(0,n,5000), body );
     return body.get_accumul();
 }
 
 
 int main(int argc, char* argv[]) {
-    size_t N;
+    std::size_t N;
     double learn_rate;
-    size_t epoches;
+    std::size_t epoches;
     if (argc != 4) {
         N = 1000;
         learn_rate = 1.0e-3;
@@ -76,14 +76,15 @@ int main(int argc, char* argv[]) {
 
     // creating random dataset
     Coor* c = new Coor[N]; /* coordinates */
-    double m_real[N], b_real[N];
+    double* m_real = new double[N];
+    double* b_real = new double[N];
 
     std::default_random_engine generator;
     std::normal_distribution<double> m_dist(0.5,0.2);
     std::normal_distribution<double> b_dist(1.0,0.2);
     std::normal_distribution<double> x_dist(0.0,1);
 #pragma omp parallel for schedule(guided, 1)
-    for(size_t i = 0; i < N; i++) {
+    for(std::size_t i = 0; i < N; i++) {
         m_real[i] = m_dist(generator);
         b_real[i] = b_dist(generator);
         c[i].s_x = x_dist(generator);
@@ -101,10 +102,12 @@ int main(int argc, char* argv[]) {
     };
 
     Para final;
-    for(size_t i = 0 ; i < epoches ; i++){
+    for(std::size_t i = 0 ; i < epoches ; i++){
         final = scan(a,c,N,final,calc);
     }
     std::cout << "b = " << a[N-1].s_b  << ", m = " << a[N-1].s_m << std::endl;
+    delete [] m_real;
+    delete [] b_real;
     delete [] a;
     delete [] c;
     return 0;

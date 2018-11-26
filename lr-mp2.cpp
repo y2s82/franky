@@ -21,14 +21,20 @@ class Body{
     public:
 
     Body(T* out,R* co, T i, C c): m_acc(i),m_coor(co), m_out(out), m_i(i), m_c(c) {}
-    T get_accumul() const { return m_acc; }
 
-        void operator()(tbb::blocked_range<std::size_t>& r){
-            T temp = m_acc;
-            for (std::size_t i = r.begin(); i != r.end(); i++)
-                temp = m_c(temp, m_out[i],m_coor[i]);
-            m_acc = temp;
-        }
+    /* For reduce */
+    void operator()(tbb::blocked_range<std::size_t>& r){
+        T temp = m_acc;
+        for (std::size_t i = r.begin(); i != r.end(); i++)
+            temp = m_c(temp, m_out[i],m_coor[i]);
+        m_acc = temp;
+    }
+    void join(Body& a){
+        m_acc.s_m = (m_acc.s_m + a.m_acc.s_m)/2;
+        m_acc.s_b = (m_acc.s_b + a.m_acc.s_b)/2;
+    }
+
+    /* For prefix scan */
     template<typename Tag>
         void operator()(tbb::blocked_range<std::size_t>& r, Tag){
             T temp = m_acc;
@@ -45,17 +51,14 @@ class Body{
         m_acc.s_m = (m_acc.s_m + a.m_acc.s_m)/2;
         m_acc.s_b = (m_acc.s_b + a.m_acc.s_b)/2;
     }
-    void join(Body& a){
-        m_acc.s_m = (m_acc.s_m + a.m_acc.s_m)/2;
-        m_acc.s_b = (m_acc.s_b + a.m_acc.s_b)/2;
-    }
     void assign(Body& b) { m_acc = b.m_acc ; }
+    T get_accumul() const { return m_acc; }
 };
 
 template<typename T,typename R, typename C>
 T scan( T* out, R* co, std::size_t n, T identity, C combine){
     Body<T,R,C> body(out, co, identity, combine);
-    tbb::parallel_reduce ( tbb::blocked_range<std::size_t>(0,n,5000), body );
+    tbb::parallel_reduce ( tbb::blocked_range<std::size_t>(0,n), body );
     return body.get_accumul();
 }
 
@@ -64,7 +67,7 @@ void prepare (double* m, double* b, Coor* c, size_t N){
     std::normal_distribution<double> m_dist(0.5,0.2);
     std::normal_distribution<double> b_dist(1.0,0.2);
     std::normal_distribution<double> x_dist(0.0,1);
-#pragma omp parallel for schedule(guided, 1)
+#pragma omp parallel for schedule(guided, 100)
     for(size_t i = 0; i < N; i++) {
         m[i] = m_dist(generator);
         b[i] = b_dist(generator);

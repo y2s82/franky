@@ -2,7 +2,6 @@
 #include <iostream>
 #include <random>
 #include <chrono>
-#include <fstream>
 
 int main(int argc, char* argv[]) {
     size_t N;
@@ -10,8 +9,6 @@ int main(int argc, char* argv[]) {
     size_t epoches;
     double correct_b = 1.0;
     double correct_m = 0.5;
-    std::ofstream ofs("points.csv");
-    ofs << "x,y" << std::endl;
     if (argc != 4) {
         N = 1000;
         learn_rate = 1.0e-3;
@@ -40,11 +37,7 @@ int main(int argc, char* argv[]) {
         b_real[i] = b_dist(generator);
         x[i] = x_dist(generator);
         y[i] = m_real[i] * x[i] + b_real[i];
-        ofs<< x[i] << "," << y[i] << '\n';
     }
-    ofs.close();
-    ofs.open("prediction.csv");
-    ofs << "m,b" << std::endl;
     // estimated b, m
     double b = 0;
     double m = 0;
@@ -55,7 +48,6 @@ int main(int argc, char* argv[]) {
         double err = p - y[idx];
         b = b - learn_rate * err;
         m = m - learn_rate * err * x[idx];
-        ofs << m << "," << b << '\n';
     }
     tStop = std::chrono::steady_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(tStop - tStart);

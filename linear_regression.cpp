@@ -3,6 +3,18 @@
 #include <random>
 #include <chrono>
 
+void gradient_descent(const double x[], const double y[], const size_t& epoches, const size_t& N, const double& learn_rate, double& m, double& b) {
+    double p;
+    double err;
+    size_t idx;
+    for(size_t i = 0; i < epoches * N; i++) {
+        idx = i % N;
+        p = b + m * x[idx];
+        err = p - y[idx];
+        b = b - learn_rate * err;
+        m = m - learn_rate * err * x[idx];
+    }
+}
 int main(int argc, char* argv[]) {
     size_t N;
     double learn_rate;
@@ -42,13 +54,7 @@ int main(int argc, char* argv[]) {
     double b = 0;
     double m = 0;
     // gradient descent 
-    for(size_t i = 0; i < epoches * N; i++) {
-        int idx = i % N;
-        double p = b+m * x[idx];
-        double err = p - y[idx];
-        b = b - learn_rate * err;
-        m = m - learn_rate * err * x[idx];
-    }
+    gradient_descent(x, y, epoches, N, learn_rate, m, b);
     tStop = std::chrono::steady_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(tStop - tStart);
     std::cout << "Execution Time: " << ms.count() << " milliseconds" << std::endl;

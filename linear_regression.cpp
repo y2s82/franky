@@ -2,6 +2,7 @@
 #include <iostream>
 #include <random>
 #include <chrono>
+#include <fstream>
 
 int main(int argc, char* argv[]) {
     size_t N;
@@ -9,6 +10,8 @@ int main(int argc, char* argv[]) {
     size_t epoches;
     double correct_b = 1.0;
     double correct_m = 0.5;
+    std::ofstream ofs("points.csv");
+    ofs << "x,y" << std::endl;
     if (argc != 4) {
         N = 1000;
         learn_rate = 1.0e-3;
@@ -19,20 +22,29 @@ int main(int argc, char* argv[]) {
         epoches = std::strtoul(argv[3], NULL,10); 
         std::cout << "N = " << N << ", learn_rate = " << learn_rate << ", epoches = " << epoches << std::endl;
     }
-    // creating random dataset
     std::chrono::steady_clock::time_point tStart, tStop;
     tStart = std::chrono::steady_clock::now();
-    double m_real[N], b_real[N], x[N], y[N];
+    double* m_real = new double[N];
+    double* b_real = new double[N];
+    double* x = new double[N];
+    double* y = new double[N];
+    // setting up random generators
     std::default_random_engine generator;
     std::normal_distribution<double> m_dist(correct_m,0.2);
     std::normal_distribution<double> b_dist(correct_b,0.2);
     std::normal_distribution<double> x_dist(0.0,1);
+
+    // creating random dataset
     for(size_t i = 0; i < N; i++) {
         m_real[i] = m_dist(generator);
         b_real[i] = b_dist(generator);
         x[i] = x_dist(generator);
         y[i] = m_real[i] * x[i] + b_real[i];
+        ofs<< x[i] << "," << y[i] << '\n';
     }
+    ofs.close();
+    ofs.open("prediction.csv");
+    ofs << "m,b" << std::endl;
     // estimated b, m
     double b = 0;
     double m = 0;
@@ -43,6 +55,7 @@ int main(int argc, char* argv[]) {
         double err = p - y[idx];
         b = b - learn_rate * err;
         m = m - learn_rate * err * x[idx];
+        ofs << m << "," << b << '\n';
     }
     tStop = std::chrono::steady_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(tStop - tStart);
@@ -50,6 +63,9 @@ int main(int argc, char* argv[]) {
     std::cout << "Predicted:\nb = " << b  << ", m = " << m << std::endl;
     std::cout << "Correct:\nb = " << correct_b  << ", m = " << correct_m << std::endl;
     std::cout << std::endl;
-
+    delete[] m_real;
+    delete[] b_real;
+    delete[] x;
+    delete[] y;
     return 0;
 }

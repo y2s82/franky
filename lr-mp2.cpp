@@ -64,7 +64,7 @@ void prepare (double* m, double* b, Coor* c, size_t N){
     std::normal_distribution<double> m_dist(0.5,0.2);
     std::normal_distribution<double> b_dist(1.0,0.2);
     std::normal_distribution<double> x_dist(0.0,1);
-//#pragma omp parallel for schedule(guided, 1)
+#pragma omp parallel for schedule(guided, 1)
     for(size_t i = 0; i < N; i++) {
         m[i] = m_dist(generator);
         b[i] = b_dist(generator);
